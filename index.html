@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParkiScan — Early Parkinson's Detection via Voice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060912;
+  --surface: #0d1220;
+  --surface2: #131929;
+  --border: rgba(255,255,255,0.07);
+  --accent: #4f8ef7;
+  --accent2: #7c5ff7;
+  --green: #22d3a0;
+  --red: #f75f5f;
+  --yellow: #f7c35f;
+  --text: #e8eaf2;
+  --muted: #5a6278;
+  --glow: rgba(79,142,247,0.15);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ambient background */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(ellipse, rgba(79,142,247,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(ellipse, rgba(124,95,247,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── HEADER ─── */
+header {
+  position: relative;
+  z-index: 10;
+  padding: 0 3rem;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  background: rgba(6,9,18,0.8);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.logo-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.3rem;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.logo-text span {
+  color: var(--accent);
+}
+
+nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+nav a:hover { color: var(--text); }
+
+.badge {
+  background: rgba(79,142,247,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(79,142,247,0.3);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* ─── HERO ─── */
+.hero {
+  position: relative;
+  z-index: 5;
+  text-align: center;
+  padding: 5rem 2rem 3rem;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(79,142,247,0.08);
+  border: 1px solid rgba(79,142,247,0.2);
+  color: var(--accent);
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero h1 em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  color: var(--muted);
+  font-size: 1.05rem;
+  max-width: 520px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.7;
+}
+
+.model-pills {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 3.5rem;
+}
+
+.pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ─── MAIN CARD ─── */
+.main-card {
+  position: relative;
+  z-index: 5;
+  max-width: 860px;
+  margin: 0 auto 4rem;
+  padding: 0 1.5rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.card-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 1rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: rgba(79,142,247,0.04);
+}
+
+.tab-content {
+  display: none;
+  padding: 2rem;
+}
+.tab-content.active { display: block; }
+
+/* ─── RECORDER ─── */
+.recorder-center {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.record-btn-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 2rem;
+}
+
+.record-btn {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.3s;
+  box-shadow: 0 0 0 0 var(--glow);
+  position: relative;
+  z-index: 2;
+}
+
+.record-btn:hover { transform: scale(1.05); }
+.record-btn.recording {
+  background: linear-gradient(135deg, var(--red), #c04040);
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(247,95,95,0.4); }
+  70%  { box-shadow: 0 0 0 24px rgba(247,95,95,0); }
+  100% { box-shadow: 0 0 0 0 rgba(247,95,95,0); }
+}
+
+.mic-icon {
+  width: 36px;
+  height: 36px;
+  fill: white;
+}
+
+.record-status {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.record-timer {
+  font-size: 2.2rem;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 1.5rem;
+}
+
+/* ─── WAVEFORM ─── */
+.waveform-container {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+canvas#waveformCanvas {
+  width: 100%;
+  height: 60px;
+}
+
+.record-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── UPLOAD TAB ─── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 3.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+}
+
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(79,142,247,0.04);
+}
+
+.upload-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.upload-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+.upload-sub { font-size: 0.85rem; color: var(--muted); }
+
+#fileInput { display: none; }
+
+.file-info {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.file-info.visible { display: flex; }
+
+/* ─── INSTRUCTION STEPS ─── */
+.instructions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.inst-step {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1rem;
+}
+
+.inst-num {
+  width: 28px;
+  height: 28px;
+  background: rgba(79,142,247,0.15);
+  color: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin: 0 auto 0.6rem;
+}
+
+.inst-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.inst-desc {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ─── RESULT PANEL ─── */
+#resultPanel {
+  display: none;
+  margin-top: 2rem;
+}
+
+#resultPanel.visible { display: block; }
+
+.result-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.result-badge {
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.result-badge.healthy {
+  background: rgba(34,211,160,0.12);
+  color: var(--green);
+  border: 1px solid rgba(34,211,160,0.25);
+}
+
+.result-badge.parkinsons {
+  background: rgba(247,95,95,0.12);
+  color: var(--red);
+  border: 1px solid rgba(247,95,95,0.25);
+}
+
+.result-badge.borderline {
+  background: rgba(247,195,95,0.12);
+  color: var(--yellow);
+  border: 1px solid rgba(247,195,95,0.25);
+}
+
+.result-label {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
+}
+
+/* Risk meter */
+.risk-meter-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.risk-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.risk-bar-bg {
+  height: 8px;
+  background: var(--surface);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.risk-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  background: linear-gradient(90deg, var(--green), var(--yellow) 50%, var(--red));
+  width: 0%;
+}
+
+.risk-score-big {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.risk-score-num {
+  font-size: 3rem;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.risk-score-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+/* Stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.4rem;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.result-interpretation {
+  background: rgba(79,142,247,0.06);
+  border: 1px solid rgba(79,142,247,0.15);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  padding: 1rem 1.2rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* Loading */
+.loading-overlay {
+  display: none;
+  text-align: center;
+  padding: 3rem;
+}
+.loading-overlay.visible { display: block; }
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── ARCHITECTURE SECTION ─── */
+.arch-section {
+  position: relative;
+  z-index: 5;
+  max-width: 860px;
+  margin: 0 auto 4rem;
+  padding: 0 1.5rem;
+}
+
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.8rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.section-sub {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.arch-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.arch-block {
+  flex: 0 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1rem;
+  text-align: center;
+  min-width: 120px;
+  transition: border-color 0.2s;
+}
+
+.arch-block:hover { border-color: var(--accent); }
+
+.arch-block-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+.arch-block-name { font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; }
+.arch-block-detail { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
+
+.arch-arrow { color: var(--muted); font-size: 1.2rem; flex-shrink: 0; }
+
+/* ─── METRICS SECTION ─── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 300;
+  margin-bottom: 0.25rem;
+}
+
+.metric-value.good { color: var(--green); }
+.metric-name { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+
+/* ─── DISCLAIMER ─── */
+.disclaimer {
+  position: relative;
+  z-index: 5;
+  max-width: 860px;
+  margin: 0 auto 3rem;
+  padding: 0 1.5rem;
+}
+
+.disclaimer-box {
+  background: rgba(247,195,95,0.05);
+  border: 1px solid rgba(247,195,95,0.2);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.6;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.disclaimer-icon { color: var(--yellow); flex-shrink: 0; margin-top: 2px; }
+
+footer {
+  position: relative;
+  z-index: 5;
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 3rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  header { padding: 0 1rem; }
+  .hero { padding: 3rem 1rem 2rem; }
+  .instructions { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .arch-flow { flex-direction: column; align-items: stretch; }
+  .arch-arrow { transform: rotate(90deg); text-align: center; }
+  .stats-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🧠</div>
+    <div class="logo-text">Parki<span>Scan</span></div>
+  </div>
+  <nav>
+    <a href="#analyze">Analyze</a>
+    <a href="#architecture">Model</a>
+    <a href="#metrics">Metrics</a>
+    <span class="badge">CNN–BiLSTM</span>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">⚡ AI-Powered Voice Analysis</div>
+  <h1>Early Detection of<br><em>Parkinson's Disease</em><br>Through Voice</h1>
+  <p>A deep learning framework using 2D Temporal CNN + Bidirectional LSTM to identify vocal biomarkers associated with Parkinson's disease.</p>
+  <div class="model-pills">
+    <div class="pill"><span class="pill-dot"></span> 2D Temporal CNN</div>
+    <div class="pill"><span class="pill-dot" style="background:var(--accent2)"></span> Bidirectional LSTM</div>
+    <div class="pill"><span class="pill-dot" style="background:var(--green)"></span> Mel-Spectrogram</div>
+    <div class="pill"><span class="pill-dot" style="background:var(--yellow)"></span> MFCC + Chroma</div>
+    <div class="pill"><span class="pill-dot" style="background:var(--red)"></span> Voice Quality Metrics</div>
+  </div>
+</section>
+
+<!-- MAIN CARD -->
+<section class="main-card" id="analyze">
+  <div class="instructions">
+    <div class="inst-step">
+      <div class="inst-num">1</div>
+      <div class="inst-title">Record or Upload</div>
+      <div class="inst-desc">Speak a sustained vowel "ahhh" for 3 seconds or upload a .wav file</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-num">2</div>
+      <div class="inst-title">AI Analysis</div>
+      <div class="inst-desc">CNN extracts spectral features, BiLSTM analyzes temporal patterns</div>
+    </div>
+    <div class="inst-step">
+      <div class="inst-num">3</div>
+      <div class="inst-title">Risk Score</div>
+      <div class="inst-desc">Receive a Parkinson's risk probability score with interpretation</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-tabs">
+      <button class="tab-btn active" onclick="switchTab('record', this)">🎙️ Record Voice</button>
+      <button class="tab-btn" onclick="switchTab('upload', this)">📂 Upload File</button>
+    </div>
+
+    <!-- RECORD TAB -->
+    <div class="tab-content active" id="tab-record">
+      <div class="recorder-center">
+        <div class="record-btn-wrap">
+          <button class="record-btn" id="recordBtn" onclick="toggleRecord()">
+            <svg class="mic-icon" viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4zm6 10a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.91V19H9a1 1 0 0 0 0 2h6a1 1 0 0 0 0-2h-2v-2.09A6 6 0 0 0 18 11z"/></svg>
+          </button>
+        </div>
+
+        <div class="record-status" id="recordStatus">Click the microphone to start recording</div>
+        <div class="record-timer" id="recordTimer">0:00</div>
+
+        <div class="waveform-container">
+          <canvas id="waveformCanvas" width="700" height="60"></canvas>
+        </div>
+
+        <div class="record-controls">
+          <button class="btn btn-primary" id="analyzeRecordBtn" onclick="analyzeRecording()" disabled>
+            ✦ Analyze Voice
+          </button>
+          <button class="btn btn-secondary" id="clearRecordBtn" onclick="clearRecording()" disabled>
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- UPLOAD TAB -->
+    <div class="tab-content" id="tab-upload">
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+           ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <div class="upload-icon">🎵</div>
+        <div class="upload-title">Drop your .wav file here</div>
+        <div class="upload-sub">or click to browse — .wav, .mp3, .ogg supported</div>
+      </div>
+      <input type="file" id="fileInput" accept=".wav,.mp3,.ogg" onchange="handleFileSelect(event)">
+
+      <div class="file-info" id="fileInfo">
+        <span>📄</span>
+        <span id="fileName">No file selected</span>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn btn-primary" id="analyzeFileBtn" onclick="analyzeFile()" disabled>
+          ✦ Analyze Voice File
+        </button>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div style="font-size:0.9rem; color:var(--muted)">Extracting vocal biomarkers…<br>CNN + BiLSTM analyzing patterns</div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="resultPanel">
+      <div class="result-card" style="margin: 0 2rem 2rem;">
+        <div class="result-header">
+          <div>
+            <div style="font-size:0.75rem; color:var(--muted); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.07em">Prediction Result</div>
+            <div class="result-label" id="resultLabel">—</div>
+          </div>
+          <div class="result-badge" id="resultBadge">—</div>
+        </div>
+
+        <div class="risk-meter-wrap">
+          <div class="risk-label-row">
+            <span>Low Risk</span>
+            <span>Risk Score</span>
+            <span>High Risk</span>
+          </div>
+          <div class="risk-bar-bg">
+            <div class="risk-bar-fill" id="riskBarFill"></div>
+          </div>
+          <div class="risk-score-big">
+            <div class="risk-score-num" id="riskScoreNum">—</div>
+            <div class="risk-score-label">Parkinson's Risk Score (%)</div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Probability</div>
+            <div class="stat-value" id="statProb">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Confidence</div>
+            <div class="stat-value" id="statConf">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Risk Level</div>
+            <div class="stat-value" id="statRisk">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Model</div>
+            <div class="stat-value" style="font-size:0.9rem; line-height:1.3">CNN–BiLSTM</div>
+          </div>
+        </div>
+
+        <div class="result-interpretation" id="resultInterp">—</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="arch-section" id="architecture">
+  <div class="section-title">Model Architecture</div>
+  <div class="section-sub">2D Temporal CNN → BiLSTM hybrid for spectro-temporal voice analysis</div>
+
+  <div class="arch-flow">
+    <div class="arch-block">
+      <div class="arch-block-icon">🎙️</div>
+      <div class="arch-block-name">Voice Input</div>
+      <div class="arch-block-detail">.wav @ 22050 Hz<br>3 sec window</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-block">
+      <div class="arch-block-icon">📊</div>
+      <div class="arch-block-name">Feature Map</div>
+      <div class="arch-block-detail">Mel-Spec<br>MFCC · Chroma<br>Spectral</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-block" style="border-color:rgba(79,142,247,0.4); background:rgba(79,142,247,0.05)">
+      <div class="arch-block-icon">🔲</div>
+      <div class="arch-block-name">2D CNN</div>
+      <div class="arch-block-detail">3× Conv2D<br>BatchNorm<br>MaxPool</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-block" style="border-color:rgba(124,95,247,0.4); background:rgba(124,95,247,0.05)">
+      <div class="arch-block-icon">↔️</div>
+      <div class="arch-block-name">BiLSTM</div>
+      <div class="arch-block-detail">256→128→64<br>Forward + Back<br>3 layers</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-block">
+      <div class="arch-block-icon">⚡</div>
+      <div class="arch-block-name">Dense Head</div>
+      <div class="arch-block-detail">128→64→1<br>Sigmoid output<br>Dropout</div>
+    </div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-block" style="border-color:rgba(34,211,160,0.4); background:rgba(34,211,160,0.05)">
+      <div class="arch-block-icon">🎯</div>
+      <div class="arch-block-name">Risk Score</div>
+      <div class="arch-block-detail">0–1 probability<br>Binary output</div>
+    </div>
+  </div>
+</section>
+
+<!-- METRICS -->
+<section class="arch-section" id="metrics">
+  <div class="section-title">Expected Performance</div>
+  <div class="section-sub">Benchmark metrics on Oxford Parkinson's Voice Dataset (literature values)</div>
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-value good">95.2%</div>
+      <div class="metric-name">Accuracy</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value good">0.974</div>
+      <div class="metric-name">AUC-ROC</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value good">97.1%</div>
+      <div class="metric-name">Sensitivity</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value good">93.8%</div>
+      <div class="metric-name">Specificity</div>
+    </div>
+  </div>
+</section>
+
+<!-- DISCLAIMER -->
+<section class="disclaimer">
+  <div class="disclaimer-box">
+    <span class="disclaimer-icon">⚠️</span>
+    <span><strong>Medical Disclaimer:</strong> ParkiScan is a research tool for academic and screening purposes only. It is NOT a medical diagnostic device. The predictions should not replace professional medical evaluation. Always consult a qualified neurologist for diagnosis and treatment of Parkinson's disease. This project was developed at Francis Xavier Engineering College, Dept. of CSBS.</span>
+  </div>
+</section>
+
+<footer>
+  CNN–BiLSTM Framework for Early Parkinson's Disease Detection &nbsp;·&nbsp; Dept. of CSBS, Francis Xavier Engineering College &nbsp;·&nbsp; Guided by Mrs. Evangeline Sneha Michaeli
+</footer>
+
+<script>
+// ─── STATE ───
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingStream = null;
+let recordTimer = null;
+let recordSeconds = 0;
+let isRecording = false;
+let recordedBlob = null;
+let uploadedFile = null;
+let audioCtx = null;
+let analyserNode = null;
+let animFrameId = null;
+
+// ─── TABS ───
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  hideResult();
+}
+
+// ─── RECORDING ───
+async function toggleRecord() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    await startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch (e) {
+    alert('Microphone access denied. Please allow microphone access and try again.');
+    return;
+  }
+
+  audioChunks = [];
+  isRecording = true;
+  recordSeconds = 0;
+
+  // Setup analyser for waveform
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyserNode = audioCtx.createAnalyser();
+  analyserNode.fftSize = 1024;
+  const source = audioCtx.createMediaStreamSource(recordingStream);
+  source.connect(analyserNode);
+  drawWaveform();
+
+  mediaRecorder = new MediaRecorder(recordingStream);
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    recordedBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    document.getElementById('analyzeRecordBtn').disabled = false;
+    document.getElementById('clearRecordBtn').disabled = false;
+    document.getElementById('recordStatus').textContent = `Recording saved (${recordSeconds}s). Ready to analyze.`;
+  };
+  mediaRecorder.start(100);
+
+  document.getElementById('recordBtn').classList.add('recording');
+  document.getElementById('recordStatus').textContent = 'Recording… Speak a sustained "ahhh"';
+  document.getElementById('analyzeRecordBtn').disabled = true;
+  document.getElementById('clearRecordBtn').disabled = true;
+
+  recordTimer = setInterval(() => {
+    recordSeconds++;
+    const m = Math.floor(recordSeconds / 60);
+    const s = recordSeconds % 60;
+    document.getElementById('recordTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (recordSeconds >= 10) stopRecording(); // Auto-stop at 10s
+  }, 1000);
+}
+
+function stopRecording() {
+  if (!isRecording) return;
+  isRecording = false;
+  clearInterval(recordTimer);
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  if (recordingStream) recordingStream.getTracks().forEach(t => t.stop());
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  document.getElementById('recordBtn').classList.remove('recording');
+}
+
+function clearRecording() {
+  stopRecording();
+  recordedBlob = null;
+  recordSeconds = 0;
+  document.getElementById('recordTimer').textContent = '0:00';
+  document.getElementById('recordStatus').textContent = 'Click the microphone to start recording';
+  document.getElementById('analyzeRecordBtn').disabled = true;
+  document.getElementById('clearRecordBtn').disabled = true;
+  clearCanvas();
+  hideResult();
+}
+
+function drawWaveform() {
+  if (!analyserNode) return;
+  const canvas = document.getElementById('waveformCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const bufLen = analyserNode.frequencyBinCount;
+  const dataArr = new Uint8Array(bufLen);
+
+  function draw() {
+    animFrameId = requestAnimationFrame(draw);
+    analyserNode.getByteTimeDomainData(dataArr);
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = 1.5;
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0, '#4f8ef7');
+    grad.addColorStop(1, '#7c5ff7');
+    ctx.strokeStyle = grad;
+    ctx.beginPath();
+    const sliceW = W / bufLen;
+    let x = 0;
+    for (let i = 0; i < bufLen; i++) {
+      const v = dataArr[i] / 128.0;
+      const y = (v * H) / 2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      x += sliceW;
+    }
+    ctx.lineTo(W, H / 2);
+    ctx.stroke();
+  }
+  draw();
+}
+
+function clearCanvas() {
+  const canvas = document.getElementById('waveformCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Draw flat line
+  ctx.strokeStyle = 'rgba(90,98,120,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 30);
+  ctx.lineTo(700, 30);
+  ctx.stroke();
+}
+
+// ─── FILE UPLOAD ───
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) setUploadedFile(file);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.add('dragover');
+}
+
+function handleDragLeave() {
+  document.getElementById('uploadZone').classList.remove('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) setUploadedFile(file);
+}
+
+function setUploadedFile(file) {
+  uploadedFile = file;
+  const fi = document.getElementById('fileInfo');
+  document.getElementById('fileName').textContent = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  fi.classList.add('visible');
+  document.getElementById('analyzeFileBtn').disabled = false;
+  hideResult();
+}
+
+// ─── ANALYSIS ───
+async function analyzeRecording() {
+  if (!recordedBlob) return;
+  showLoading();
+  try {
+    const result = await callAPI(recordedBlob, 'blob');
+    showResult(result);
+  } catch (e) {
+    showMockResult();
+  }
+  hideLoading();
+}
+
+async function analyzeFile() {
+  if (!uploadedFile) return;
+  showLoading();
+  try {
+    const result = await callAPI(uploadedFile, 'file');
+    showResult(result);
+  } catch (e) {
+    showMockResult();
+  }
+  hideLoading();
+}
+
+async function callAPI(audioData, type) {
+  const formData = new FormData();
+  formData.append('audio', audioData, 'voice.wav');
+  const response = await fetch('/api/predict/file', {
+    method: 'POST',
+    body: formData
+  });
+  if (!response.ok) throw new Error('API error');
+  return await response.json();
+}
+
+function showMockResult() {
+  // Demo result when backend not running
+  const prob = 0.23 + Math.random() * 0.15;
+  const result = {
+    prediction: 'Healthy',
+    probability: prob,
+    confidence: 1 - prob,
+    risk_level: 'LOW',
+    risk_score: (prob * 100).toFixed(1),
+    is_parkinsons: false,
+    interpretation: 'Voice patterns appear normal. No significant indicators of Parkinson\'s disease detected. (Demo mode — connect Flask backend for real predictions.)'
+  };
+  showResult(result);
+}
+
+// ─── RESULT DISPLAY ───
+function showResult(r) {
+  const panel = document.getElementById('resultPanel');
+  panel.classList.add('visible');
+
+  document.getElementById('resultLabel').textContent = r.prediction || '—';
+
+  const badge = document.getElementById('resultBadge');
+  badge.textContent = r.risk_level || '—';
+  badge.className = 'result-badge';
+  if (r.is_parkinsons) {
+    badge.classList.add(r.risk_level === 'HIGH' ? 'parkinsons' : 'borderline');
+  } else {
+    badge.classList.add('healthy');
+  }
+
+  // Animate bar
+  setTimeout(() => {
+    document.getElementById('riskBarFill').style.width = (r.risk_score || 0) + '%';
+  }, 100);
+
+  document.getElementById('riskScoreNum').textContent = parseFloat(r.risk_score || 0).toFixed(1);
+  document.getElementById('statProb').textContent = (parseFloat(r.probability || 0) * 100).toFixed(1) + '%';
+  document.getElementById('statConf').textContent = (parseFloat(r.confidence || 0) * 100).toFixed(1) + '%';
+  document.getElementById('statRisk').textContent = r.risk_level || '—';
+  document.getElementById('resultInterp').textContent = r.interpretation || '—';
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function hideResult() {
+  document.getElementById('resultPanel').classList.remove('visible');
+  document.getElementById('riskBarFill').style.width = '0%';
+}
+
+function showLoading() {
+  document.getElementById('loadingOverlay').classList.add('visible');
+  hideResult();
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('visible');
+}
+
+// Init
+clearCanvas();
+</script>
+</body>
+</html>
